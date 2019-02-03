@@ -170,29 +170,29 @@ class WSClient:
         if not self.sock.connected:
             self._connected = False
             return
-        r, _, _ = select.select(
-            (self.sock.sock, ), (), (), timeout)
-        if r:
-            op_code, frame = self.sock.recv_data_frame(True)
-            if op_code == ABNF.OPCODE_CLOSE:
-                self._connected = False
-                return
-            elif op_code == ABNF.OPCODE_BINARY or op_code == ABNF.OPCODE_TEXT:
-                data = frame.data
-                if six.PY3:
-                    data = data.decode("utf-8")
-                if len(data) > 1:
-                    channel = ord(data[0])
-                    data = data[1:]
-                    if data:
-                        if channel in [STDOUT_CHANNEL, STDERR_CHANNEL]:
-                            # keeping all messages in the order they received for
-                            # non-blocking call.
-                            self._all += data
-                        if channel not in self._channels:
-                            self._channels[channel] = data
-                        else:
-                            self._channels[channel] += data
+        # r, _, _ = select.select(
+        #     (self.sock.sock, ), (), (), timeout)
+        # if r:
+        op_code, frame = self.sock.recv_data_frame(True)
+        if op_code == ABNF.OPCODE_CLOSE:
+            self._connected = False
+            return
+        elif op_code == ABNF.OPCODE_BINARY or op_code == ABNF.OPCODE_TEXT:
+            data = frame.data
+            if six.PY3:
+                data = data.decode("utf-8")
+            if len(data) > 1:
+                channel = ord(data[0])
+                data = data[1:]
+                if data:
+                    if channel in [STDOUT_CHANNEL, STDERR_CHANNEL]:
+                        # keeping all messages in the order they received for
+                        # non-blocking call.
+                        self._all += data
+                    if channel not in self._channels:
+                        self._channels[channel] = data
+                    else:
+                        self._channels[channel] += data
 
     def run_forever(self, timeout=None):
         """Wait till connection is closed or timeout reached. Buffer any input
